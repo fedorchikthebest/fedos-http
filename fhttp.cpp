@@ -6,14 +6,35 @@
 #include<iostream>
 #include<thread>
 #include<mutex>
+#include<atomic>
 
 std::mutex mutex;
 std::queue<int> tasks;
-bool run = true;
+std::atomic<bool> application_run = {true};
 
 std::map<std::string, int> commands = {
-    std::pair
+    std::pair<std::string, int>("stop", 1)
 };
+
+
+void console(){
+    std::string command;
+    while (application_run.load(std::memory_order_relaxed)){
+        std::cin >> command;
+        switch (commands[command])
+        {
+        case 1:
+            application_run.store(false, std::memory_order_relaxed);
+            exit(0);
+            break;
+        
+        default:
+            std::cout << "command not found" << std::endl;
+            break;
+        }
+    }
+}
+
 
 std::string parse_url(std::string request){
     int counter = 0;
@@ -51,17 +72,17 @@ void fhttp::Server::requests_accept_thread(){
 
     // listening to the assigned socket 
     listen(serverSocket, 5); 
-    while (run){
-        clientSocket 
+    while (application_run.load(std::memory_order_relaxed)){
+        clientSocket
             = accept(serverSocket, nullptr, nullptr); 
-        std::cout << 2 << std::endl;
         mutex.lock();
         tasks.push(clientSocket);
-        std::cout << tasks.front() << std::endl;
         mutex.unlock();
     }
+    close(clientSocket);
     // closing the socket. 
     close(serverSocket);
+    return;
 }
 
 
@@ -72,7 +93,7 @@ void fhttp::Server::requests_handler_thread(){
     std::string response;
     int buffer_size;
 
-    while (run){
+    while (application_run.load(std::memory_order_relaxed)){
         mutex.lock();
         if (!tasks.empty()){
             clientSocket = tasks.front();
@@ -95,21 +116,18 @@ void fhttp::Server::requests_handler_thread(){
         }
         mutex.unlock();
     }
+    return;
 }
 
 
 void fhttp::Server::run(){
     std::thread requests_handler([](fhttp::Server srv){srv.requests_handler_thread();}, *this);
     std::thread requests_accept([](fhttp::Server srv){srv.requests_accept_thread();}, *this);
+    std::thread console_thread(console);
 
     requests_accept.join();
     requests_handler.join();
-
-    std::string command;
-
-    while (true){
-
-    }
+    console_thread.join();
 }
 
 
