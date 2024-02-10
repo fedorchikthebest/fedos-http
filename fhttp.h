@@ -19,4 +19,18 @@ namespace fhttp{
             void run();
             Server(int p);
     };
+
+    class Responce{ //parsing http requests and make responce
+        private:
+            std::map<std::string, std::string> request;
+            std::map<std::string, std::string> response;
+        public:
+            Responce(std::string request);
+            char* c_str();
+            std::string get_str_header(std::string header);
+            int get_int_header(std::string header);
+            void render(std::string html);
+            void set_header(std::string header, std::string value);
+            void set_cookie(std::string name, std::string value);
+    };
 }
