@@ -11,6 +11,7 @@
 std::mutex mutex;
 std::queue<int> tasks;
 std::atomic<bool> application_run = {true};
+int serverSocket;
 
 std::map<std::string, int> commands = {
     std::pair<std::string, int>("stop", 1)
@@ -25,7 +26,13 @@ void console(){
         {
         case 1:
             application_run.store(false, std::memory_order_relaxed);
-            exit(0);
+            close(serverSocket);
+            mutex.lock();
+            for (int _ = 0; _ < tasks.size(); _++){
+                close(tasks.front());
+                tasks.pop();
+            }
+            mutex.unlock();
             break;
         
         default:
@@ -56,7 +63,7 @@ std::string parse_url(std::string request){
 
 void fhttp::Server::requests_accept_thread(){
     // creating socket 
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0); 
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0); 
     int clientSocket;
     int status;
 
