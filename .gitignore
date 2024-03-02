@@ -36,3 +36,4 @@ server.cpp
 client.cpp
 server.cpp
 .vscode/settings.json
+main.html

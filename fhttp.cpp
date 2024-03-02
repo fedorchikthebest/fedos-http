@@ -7,41 +7,13 @@
 #include<thread>
 #include<mutex>
 #include<atomic>
+#include <arpa/inet.h>
 
 std::mutex mutex;
 std::queue<int> tasks;
+std::queue<std::thread> request_handlers;
 std::atomic<bool> application_run = {true};
 int serverSocket;
-
-std::map<std::string, int> commands = {
-    std::pair<std::string, int>("stop", 1)
-};
-
-
-void console(){
-    std::string command;
-    while (application_run.load(std::memory_order_relaxed)){
-        std::cin >> command;
-        switch (commands[command])
-        {
-        case 1:
-            application_run.store(false, std::memory_order_relaxed);
-            close(serverSocket);
-            mutex.lock();
-            for (int _ = 0; _ < tasks.size(); _++){
-                close(tasks.front());
-                tasks.pop();
-            }
-            mutex.unlock();
-            break;
-        
-        default:
-            std::cout << "command not found" << std::endl;
-            break;
-        }
-    }
-}
-
 
 std::string parse_url(std::string request){
     int counter = 0;
@@ -60,6 +32,12 @@ std::string parse_url(std::string request){
     return ans.str().c_str();
 }
 
+std::string crop_url(std::string url){
+    std::stringstream new_url;
+    new_url << url.substr(0, url.rfind('/') + 1);
+    new_url << "*";
+    return new_url.str();
+}
 
 void fhttp::Server::requests_accept_thread(){
     // creating socket 
@@ -71,7 +49,7 @@ void fhttp::Server::requests_accept_thread(){
     sockaddr_in serverAddress; 
     serverAddress.sin_family = AF_INET; 
     serverAddress.sin_port = htons(port); 
-    serverAddress.sin_addr.s_addr = INADDR_ANY; 
+    serverAddress.sin_addr.s_addr = inet_addr(addr); 
 
     // binding socket. 
     status = bind(serverSocket, (struct sockaddr*)&serverAddress, 
@@ -108,10 +86,14 @@ void fhttp::Server::requests_handler_thread(){
             mutex.unlock();
             buffer_size = recv(clientSocket, buffer, sizeof(buffer) / sizeof(char), 0);
             url = parse_url(buffer);
-
             if (responce_functions.count(url)){
                 std::cout << "request to " << url << std::endl;
                 response = responce_functions[url](buffer);
+                send(clientSocket, response.c_str(), response.size(), 0);
+            }
+            else if (responce_functions.count(crop_url(url))){
+                std::cout << "request to " << url << std::endl;
+                response = responce_functions[crop_url(url)](buffer);
                 send(clientSocket, response.c_str(), response.size(), 0);
             }
             else{
@@ -127,14 +109,19 @@ void fhttp::Server::requests_handler_thread(){
 }
 
 
-void fhttp::Server::run(){
-    std::thread requests_handler([](fhttp::Server srv){srv.requests_handler_thread();}, *this);
+void fhttp::Server::run(unsigned short int thread_num){
     std::thread requests_accept([](fhttp::Server srv){srv.requests_accept_thread();}, *this);
-    std::thread console_thread(console);
+
+    for (int i = 0; i < thread_num; i++){
+        request_handlers.push(std::thread([](fhttp::Server srv){srv.requests_handler_thread();}, *this));
+    }
+
+    for (int i = 0; i < thread_num; i++){
+        request_handlers.front().join();
+        request_handlers.pop();
+    }
 
     requests_accept.join();
-    requests_handler.join();
-    console_thread.join();
 }
 
 
@@ -143,6 +130,7 @@ void fhttp::Server::request_handler(std::string url, std::string (*hendler)(std:
 }
 
 
-fhttp::Server::Server(int p){
+fhttp::Server::Server(char* ip, int p){
+    addr = ip;
     port = p;
 }

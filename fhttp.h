@@ -13,10 +13,11 @@ namespace fhttp{
             std::map<std::string, std::string(*)(std::string)> responce_functions;
             void requests_accept_thread();
             void requests_handler_thread();
-            int port;
+            unsigned short int port;
+            char* addr;
         public:
             void request_handler(std::string url, std::string (*obr)(std::string));
-            void run();
-            Server(int p);
+            void run(unsigned short int thread_num);
+            Server(char* ip, int p);
     };
 }
