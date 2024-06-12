@@ -37,3 +37,5 @@ client.cpp
 server.cpp
 .vscode/settings.json
 main.html
+.vscode/launch.json
+.vscode/tasks.json
