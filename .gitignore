@@ -39,3 +39,4 @@ server.cpp
 main.html
 .vscode/launch.json
 .vscode/tasks.json
+./.vscode
