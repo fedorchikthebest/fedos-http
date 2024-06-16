@@ -12,7 +12,7 @@ typedef struct llist
 
 
 
-linked_list* linked_list_create(void* data);
+linked_list* linked_list_create();
 void linked_list_add(linked_list* list, void* data);
 list_node* search_elem(linked_list list, void* data);
 void list_node_add(list_node* start, void* data);

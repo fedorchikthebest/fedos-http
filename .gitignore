@@ -31,8 +31,7 @@
 *.out
 *.app
 
-test.c
-test.py
+test.*
 server.cpp
 client.cpp
 server.cpp
@@ -41,3 +40,4 @@ main.html
 .vscode/launch.json
 .vscode/tasks.json
 .vscode
+.venv

@@ -1,5 +1,5 @@
 #include "server.h"
-#include "http/responce_handler.h"
+#include "../http/responce_handler.h"
 
 #include <sys/epoll.h>
 
@@ -30,14 +30,14 @@ int run_server(char* addr, unsigned short int port){
     server_addr.sin_port = htons(port); 
     server_addr.sin_addr.s_addr = inet_addr(addr); 
 
-    if (bind(listen_sock, (struct sockaddr*)&server_addr, sizeof(server_addr))) return -1;
+    if (bind(listen_sock, (struct sockaddr*)&server_addr, sizeof(server_addr))) exit(EXIT_FAILURE);
 
     listen(listen_sock, 8);
 
     ev.events = EPOLLIN;
     ev.data.fd = listen_sock;
 
-    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) return -1;
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) exit(EXIT_FAILURE);
 
     while (1){
         nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
@@ -56,9 +56,15 @@ int run_server(char* addr, unsigned short int port){
                     epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, &ev);
                 }
                 else{
-                    add_to_pool(events[n].data.fd);
+                    send(events[n].data.fd, "HTTP/1.1 200 OK", 16, 0);
+                    buffer[buffer_size] = 0;
+                    printf("%s", buffer);
                 }
             }
         }
     }
+}
+
+int main(){
+    run_server("127.0.0.1", 5000);
 }

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "path_tree.h"
 
 
@@ -82,14 +81,4 @@ void* get_tree_node(uint32_t* path, int path_len, tree_node* root){
         if (!is_find) return NULL;
     }
     return current_node->data;
-}
-
-
-int tst(char* a, char* b){
-    printf("YAY");
-}
-
-
-void runner(int (*op)(char*, char*)){
-    op("", "");
 }
